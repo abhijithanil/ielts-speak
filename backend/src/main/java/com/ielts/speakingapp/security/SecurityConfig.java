@@ -58,29 +58,46 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
+        http
+                // Disable CSRF for API
+                .csrf(AbstractHttpConfigurer::disable)
+
+                // Configure CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // Configure authorization
                 .authorizeHttpRequests(authz -> authz
-                        // Public endpoints
+                        // Allow auth endpoints without authentication
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // Authenticated endpoints
+                        // Require authentication for v1 API endpoints
                         .requestMatchers("/api/v1/**").authenticated()
 
-                        // All other requests need authentication
+                        // Allow actuator endpoints (for health checks, etc.)
+                        .requestMatchers("/actuator/**").permitAll()
+
+                        // All other requests require authentication
                         .anyRequest().authenticated()
                 )
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // Modern way to handle headers for H2 Console (development only)
-        http.headers(headers -> headers
-                .httpStrictTransportSecurity(hstsConfig -> hstsConfig.disable()) // Only for development
-                .contentTypeOptions(contentTypeOptionsConfig -> contentTypeOptionsConfig.disable()) // Only for development
-                .and()
-        );
+                // Configure exception handling
+                .exceptionHandling(ex -> {
+                    System.out.println(ex.toString());
+                            ex
+                                    .authenticationEntryPoint(jwtAuthenticationEntryPoint);
+                        }
+                )
+
+                // Stateless session management
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // Add authentication provider
+                .authenticationProvider(authenticationProvider())
+
+                // Add JWT filter
+                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -89,21 +106,29 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow frontend served from anywhere (or just your GCP IP)
+        // Allow specific origins
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "http://34.173.178.188:3000"
+                "http://127.0.0.1:3000"
         ));
 
+        // Allow all HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("*"));
+
+        // Allow all headers
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+
+        // Allow credentials
         configuration.setAllowCredentials(true);
+
+        // Expose headers
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
+
+        // Cache preflight response
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // 🔄 apply to all endpoints
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }

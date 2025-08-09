@@ -26,7 +26,8 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await api.post('/v1/auth/login', formData);
+      // Fixed: Change from '/v1/auth/login' to '/auth/login'
+      const response = await api.post('/auth/login', formData);
       
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);

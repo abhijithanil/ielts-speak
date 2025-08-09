@@ -15,7 +15,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -31,76 +30,78 @@ public class AuthService {
     @Autowired
     private JwtTokenUtil jwtTokenUtil;
 
-
     @Autowired
     private AuthenticationManager authenticationManager;
 
     public AuthResponse signup(SignupRequest request) {
-        // Check if username already exists
-        if (userRepository.existsByUsername(request.getUsername())) {
-            return new AuthResponse(null, null, "Username already exists");
+        try {
+            // Check if username already exists
+            if (userRepository.existsByUsername(request.getUsername())) {
+                return new AuthResponse(null, null, "Username already exists");
+            }
+
+            // Check if email already exists
+            if (userRepository.existsByEmail(request.getEmail())) {
+                return new AuthResponse(null, null, "Email already exists");
+            }
+
+            // Create new user
+            User user = new User();
+            user.setUsername(request.getUsername());
+            user.setEmail(request.getEmail());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setCreatedAt(LocalDateTime.now());
+
+            User savedUser = userRepository.save(user);
+
+            // Create UserPrincipal and generate token
+            UserPrincipal userPrincipal = UserPrincipal.create(savedUser);
+            String token = jwtTokenUtil.generateToken(userPrincipal);
+
+            return new AuthResponse(token, savedUser.getUsername(), "User registered successfully");
+
+        } catch (Exception e) {
+            return new AuthResponse(null, null, "Signup failed: " + e.getMessage());
         }
-
-        // Check if email already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
-            return new AuthResponse(null, null, "Email already exists");
-        }
-
-        // Create new user
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setCreatedAt(LocalDateTime.now());
-
-        userRepository.save(user);
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        user.getUsername(),
-                        user.getPassword()
-                )
-        );
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-
-        // Generate token
-        String token = jwtTokenUtil.generateToken(userPrincipal);
-
-        return new AuthResponse(token, user.getUsername(), "User registered successfully");
     }
 
     public AuthResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
+        try {
+            // Find user by username
+            Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
+            if (userOpt.isEmpty()) {
+                return new AuthResponse(null, null, "Invalid username or password");
+            }
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+            User user = userOpt.get();
 
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
+            // Check password
+            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                return new AuthResponse(null, null, "Invalid username or password");
+            }
 
-        if (userOpt.isEmpty()) {
-            return new AuthResponse(null, null, "Invalid username or password");
+            // Authenticate with Spring Security
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()
+                    )
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // Create UserPrincipal and generate token
+            UserPrincipal userPrincipal = UserPrincipal.create(user);
+            String token = jwtTokenUtil.generateToken(userPrincipal);
+
+            // Update last login
+            user.setLastLogin(LocalDateTime.now());
+            userRepository.save(user);
+
+            return new AuthResponse(token, user.getUsername(), "Login successful");
+
+        } catch (Exception e) {
+            return new AuthResponse(null, null, "Login failed: " + e.getMessage());
         }
-
-        User user = userOpt.get();
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            return new AuthResponse(null, null, "Invalid username or password");
-        }
-
-        // Update last login
-        user.setLastLogin(LocalDateTime.now());
-        userRepository.save(user);
-
-        // Generate token
-        String token = jwtTokenUtil.generateToken(userPrincipal);
-
-        return new AuthResponse(token, user.getUsername(), "Login successful");
     }
 }

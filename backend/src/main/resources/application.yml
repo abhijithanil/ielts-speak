@@ -71,3 +71,42 @@ app:
 
 gcp:
   project-id: ${GCP_PROJECT_ID:inspire26}  # Google Cloud Project ID
+
+# Logging Configuration - Added comprehensive security logging
+logging:
+  level:
+    # Root level
+    root: INFO
+
+    # Application packages
+    com.ielts.speakingapp: DEBUG
+
+    # Security logging - Very important for debugging auth issues
+    org.springframework.security: DEBUG
+    org.springframework.security.web: DEBUG
+    org.springframework.security.web.authentication: DEBUG
+    org.springframework.security.web.access: DEBUG
+    org.springframework.security.config: DEBUG
+    org.springframework.security.core: DEBUG
+
+    # JWT and authentication
+    com.ielts.speakingapp.security: DEBUG
+    com.ielts.speakingapp.services.AuthService: DEBUG
+    com.ielts.speakingapp.services.CustomUserDetailsService: DEBUG
+
+    # HTTP requests and responses
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet: DEBUG
+
+    # Database queries (already enabled with show-sql)
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+    # Actuator
+    org.springframework.boot.actuate: DEBUG
+
+  pattern:
+    # Enhanced console pattern with thread names and logger names
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    # File pattern if you want to log to file
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"

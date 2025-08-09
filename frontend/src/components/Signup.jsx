@@ -50,6 +50,7 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
+      // Fixed: Change from '/v1/auth/signup' to '/auth/signup'
       const response = await api.post('/auth/signup', {
         username: formData.username,
         email: formData.email,
