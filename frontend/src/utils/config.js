@@ -24,6 +24,14 @@ const config = {
     delay: 1000, // 1 second delay before speaking
   },
 
+  // Speech synthesis settings
+  speechSynthesis: {
+    rate: 0.8, // Speaking rate (0.1 to 10)
+    volume: 1.0, // Volume (0 to 1)
+    pitch: 1.0, // Pitch (0 to 2)
+    language: 'en-US', // Default language
+  },
+
   // Preparation timer for Part 2 (Q-card)
   preparationTimer: {
     part2: 60, // 1 minute preparation time
@@ -42,6 +50,14 @@ const config = {
     part2: 120, // 2 minutes for Part 2
     part3: 120, // 2 minutes for Part 3
     complete: 300, // 5 minutes for complete test
+  },
+
+  // Speech detection settings
+  speechDetection: {
+    threshold: 30, // Volume threshold for speech detection
+    interval: 100, // Check every 100ms
+    minDuration: 200, // Minimum 200ms to count as speech
+    enabled: true, // Default enabled state
   },
 };
 

@@ -50,7 +50,7 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/v1/auth/signup', {
+      const response = await api.post('/auth/signup', {
         username: formData.username,
         email: formData.email,
         password: formData.password
