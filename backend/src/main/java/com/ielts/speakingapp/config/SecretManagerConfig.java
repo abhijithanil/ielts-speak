@@ -46,7 +46,7 @@ public class SecretManagerConfig {
      * @param client The singleton SecretManagerServiceClient bean.
      * @return The DeepSeek API key as a String.
      */
-    @Bean
+    @Bean("deepSeekApiKey")
     public String getDeepSeekApiKey(SecretManagerServiceClient client) {
         log.info("Fetching DeepSeek API key from Secret Manager");
         try {
@@ -72,7 +72,7 @@ public class SecretManagerConfig {
      * @param client The singleton SecretManagerServiceClient bean.
      * @return The JWT secret key as a String.
      */
-    @Bean
+    @Bean("secretJwtKey")
     public String getJwtSecretKey(SecretManagerServiceClient client) {
         log.info("Fetching JWT Secret Key from Secret Manager");
         try {
@@ -86,6 +86,23 @@ public class SecretManagerConfig {
                     toStringUtf8();
         } catch (Exception e) {
             throw new RuntimeException("Failed to access JWT secret key from Secret Manager", e);
+        }
+    }
+
+    @Bean("publicUiUrl")
+    public String getPublicUiUrl(SecretManagerServiceClient client) {
+        log.info("Fetching Public UI URL from Secret Manager");
+        try {
+            String secretId = "PUBLIC_UI_URL";
+            String versionId = "latest";
+            String resourceName = String.format("projects/%s/secrets/%s/versions/%s", projectId, secretId, versionId);
+
+            return client.accessSecretVersion(resourceName)
+                    .getPayload()
+                    .getData()
+                    .toStringUtf8();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to access Public UI URL from Secret Manager", e);
         }
     }
 }

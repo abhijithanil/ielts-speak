@@ -1,8 +1,10 @@
 package com.ielts.speakingapp.controllers;
 
+import com.ielts.speakingapp.models.dto.CurrentUser;
 import com.ielts.speakingapp.models.dto.SpeechAnalysisRequest;
 import com.ielts.speakingapp.models.dto.SpeechAnalysisResponse;
-import com.ielts.speakingapp.security.JwtUtil;
+import com.ielts.speakingapp.models.dto.UserPrincipal;
+import com.ielts.speakingapp.security.JwtTokenUtil;
 import com.ielts.speakingapp.services.SpeechAnalysisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,20 +23,20 @@ import java.util.Base64;
 public class SpeechAnalysisController {
 
     private final SpeechAnalysisService speechAnalysisService;
-    private final JwtUtil jwtUtil;
+    private final JwtTokenUtil jwtUtil;
 
     @PostMapping("/analyze")
     public ResponseEntity<SpeechAnalysisResponse> analyzeSpeech(
             @RequestParam("question") String question,
             @RequestParam("audio") MultipartFile audioFile,
             @RequestParam(value = "testSection", defaultValue = "part1") String testSection,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader, @CurrentUser UserPrincipal userPrincipal) {
         
         try {
             log.info("Received speech analysis request for question: {}", question);
             
             // Extract username from JWT token
-            String username = extractUsernameFromToken(authHeader);
+            String username = extractUsernameFromToken(authHeader, userPrincipal);
             
             // Convert audio file to base64
             byte[] audioBytes = audioFile.getBytes();
@@ -62,13 +64,13 @@ public class SpeechAnalysisController {
     @PostMapping("/analyze-base64")
     public ResponseEntity<SpeechAnalysisResponse> analyzeSpeechBase64(
             @RequestBody SpeechAnalysisRequest request,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader, @CurrentUser UserPrincipal userPrincipal) {
         
         try {
             log.info("Received speech analysis request for question: {}", request.getQuestion());
             
             // Extract username from JWT token
-            String username = extractUsernameFromToken(authHeader);
+            String username = extractUsernameFromToken(authHeader, userPrincipal);
             
             // Analyze speech
             SpeechAnalysisResponse response = speechAnalysisService.analyzeSpeech(
@@ -88,13 +90,13 @@ public class SpeechAnalysisController {
         }
     }
 
-    private String extractUsernameFromToken(String authHeader) {
+    private String extractUsernameFromToken(String authHeader, UserPrincipal userPrincipal) {
         try {
             // Remove "Bearer " prefix
             String token = authHeader.replace("Bearer ", "");
             
             // Validate token and extract username
-            if (jwtUtil.validateToken(token)) {
+            if (jwtUtil.validateToken(token, userPrincipal)) {
                 return jwtUtil.getUsernameFromToken(token);
             } else {
                 throw new RuntimeException("Invalid JWT token");

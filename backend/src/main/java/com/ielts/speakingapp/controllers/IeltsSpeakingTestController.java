@@ -1,7 +1,9 @@
 package com.ielts.speakingapp.controllers;
 
+import com.ielts.speakingapp.models.dto.CurrentUser;
 import com.ielts.speakingapp.models.dto.SpeechAnalysisResponse;
-import com.ielts.speakingapp.security.JwtUtil;
+import com.ielts.speakingapp.models.dto.UserPrincipal;
+import com.ielts.speakingapp.security.JwtTokenUtil;
 import com.ielts.speakingapp.services.IeltsSpeakingTestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,14 +21,14 @@ import java.util.Map;
 public class IeltsSpeakingTestController {
 
     private final IeltsSpeakingTestService ieltsSpeakingTestService;
-    private final JwtUtil jwtUtil;
+    private final JwtTokenUtil jwtUtil;
 
     @PostMapping("/generate")
-    public ResponseEntity<Map<String, Object>> generateCompleteTest(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, Object>> generateCompleteTest(@RequestHeader("Authorization") String authHeader, @CurrentUser UserPrincipal userPrincipal) {
         try {
             // Validate token
             String token = authHeader.replace("Bearer ", "");
-            if (!jwtUtil.validateToken(token)) {
+            if (!jwtUtil.validateToken(token, userPrincipal)) {
                 return ResponseEntity.status(401).build();
             }
 
@@ -41,13 +43,13 @@ public class IeltsSpeakingTestController {
     }
 
     @PostMapping("/generate-structured")
-    public ResponseEntity<Map<String, Object>> generateStructuredTest(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, Object>> generateStructuredTest(@RequestHeader("Authorization") String authHeader, @CurrentUser UserPrincipal userPrincipal) {
         try {
             log.info("Received request to generate structured IELTS test");
-            
+
             // Validate token
             String token = authHeader.replace("Bearer ", "");
-            if (!jwtUtil.validateToken(token)) {
+            if (!jwtUtil.validateToken(token, userPrincipal)) {
                 log.warn("Invalid token provided for structured test generation");
                 return ResponseEntity.status(401).build();
             }
@@ -68,12 +70,13 @@ public class IeltsSpeakingTestController {
     @PostMapping("/analyze-question")
     public ResponseEntity<SpeechAnalysisResponse> analyzeQuestionResponse(
             @RequestBody Map<String, String> request,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader,
+            @CurrentUser UserPrincipal userPrincipal) {
         
         try {
             // Validate token
             String token = authHeader.replace("Bearer ", "");
-            if (!jwtUtil.validateToken(token)) {
+            if (!jwtUtil.validateToken(token, userPrincipal)) {
                 return ResponseEntity.status(401).build();
             }
 
@@ -97,12 +100,12 @@ public class IeltsSpeakingTestController {
     @PostMapping("/summary")
     public ResponseEntity<Map<String, Object>> getTestSummary(
             @RequestBody List<SpeechAnalysisResponse> allAnalyses,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader, @CurrentUser UserPrincipal userPrincipal) {
         
         try {
             // Validate token
             String token = authHeader.replace("Bearer ", "");
-            if (!jwtUtil.validateToken(token)) {
+            if (!jwtUtil.validateToken(token, userPrincipal)) {
                 return ResponseEntity.status(401).build();
             }
 

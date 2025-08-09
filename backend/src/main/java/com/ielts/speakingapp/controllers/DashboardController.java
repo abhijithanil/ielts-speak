@@ -1,7 +1,9 @@
 package com.ielts.speakingapp.controllers;
 
+import com.ielts.speakingapp.models.dto.CurrentUser;
+import com.ielts.speakingapp.models.dto.UserPrincipal;
+import com.ielts.speakingapp.security.JwtTokenUtil;
 import com.ielts.speakingapp.services.DashboardService;
-import com.ielts.speakingapp.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,13 +19,13 @@ public class DashboardController {
     private DashboardService dashboardService;
 
     @Autowired
-    private JwtUtil jwtUtil;
+    private JwtTokenUtil jwtUtil;
 
     @GetMapping("/stats")
-    public ResponseEntity<Map<String, Object>> getDashboardStats(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, Object>> getDashboardStats(@RequestHeader("Authorization") String authHeader, @CurrentUser UserPrincipal userPrincipal) {
         try {
             String token = authHeader.replace("Bearer ", "");
-            if (!jwtUtil.validateToken(token)) {
+            if (!jwtUtil.validateToken(token, userPrincipal)) {
                 return ResponseEntity.status(401).build();
             }
 
